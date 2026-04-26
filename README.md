@@ -8,19 +8,19 @@ Built to simulate the kind of daily threat intel workflows used in real SOC envi
 ## Screenshots
 
 ### Main Interface - MalwareBazaar Feed
-![MalwareBazaar Feed showing recent malware samples with SHA256 hashes and file signatures](TIA-1.png)
+![MalwareBazaar Feed](malwarebazaar-feed.png)
 
 ### Feodo Tracker - Botnet C2 IP Blocklist
-![Feodo Tracker showing active and offline botnet C2 IPs with ports](TIA-2.png)
+![Feodo Tracker](feodo-tracker.png)
 
 ### SSL Blacklist - Malicious Certificates
-![SSL Blacklist showing Vidar and PureHVNC C&C certificates](TIA-3.png)
+![SSL Blacklist](ssl-blacklist.png)
 
 ### VirusTotal Hash Lookup
-![VirusTotal lookup showing 9/75 engine detections for a malware sample](TIA-4.png)
+![VirusTotal Lookup](virustotal-lookup.png)
 
 ### HTML Export
-![Styled HTML threat intelligence digest report](TIA-5.png)
+![HTML Export](html-export.png)
 
 ## Features
 - Live threat feed ingestion from three sources with no API key required
