@@ -5,6 +5,23 @@ A Python-based threat intelligence automation tool with a dark-themed GUI that p
 
 Built to simulate the kind of daily threat intel workflows used in real SOC environments.
 
+## Screenshots
+
+### Main Interface - MalwareBazaar Feed
+![MalwareBazaar Feed showing recent malware samples with SHA256 hashes and file signatures](TIA-1.png)
+
+### Feodo Tracker - Botnet C2 IP Blocklist
+![Feodo Tracker showing active and offline botnet C2 IPs with ports](TIA-2.png)
+
+### SSL Blacklist - Malicious Certificates
+![SSL Blacklist showing Vidar and PureHVNC C&C certificates](TIA-3.png)
+
+### VirusTotal Hash Lookup
+![VirusTotal lookup showing 9/75 engine detections for a malware sample](TIA-4.png)
+
+### HTML Export
+![Styled HTML threat intelligence digest report](TIA-5.png)
+
 ## Features
 - Live threat feed ingestion from three sources with no API key required
 - Real-time SHA256 and MD5 hash lookup against 75+ AV engines via VirusTotal
