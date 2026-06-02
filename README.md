@@ -23,7 +23,6 @@ Built to simulate the kind of daily threat intel workflows used in real SOC envi
 ![HTML Export](html-export.png)
 
 ## Features
-- Live threat feed ingestion from three sources with no API key required
 - Real-time SHA256 and MD5 hash lookup against 75+ AV engines via VirusTotal
 - Filter by data source using checkboxes
 - Export reports as plain text or styled HTML
