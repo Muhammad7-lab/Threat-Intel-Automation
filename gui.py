@@ -37,7 +37,9 @@ def lookup_virustotal(hash_value):
             "name": name,
             "malicious": stats.get("malicious", 0),
             "suspicious": stats.get("suspicious", 0),
-            "clean": stats.get("undetected", 0),
+            "undetected": stats.get("undetected", 0),
+            "harmless": stats.get("harmless", 0),
+            "other": stats.get("timeout", 0) + stats.get("failure", 0) + stats.get("type-unsupported", 0),
             "total": sum(stats.values())
         }
     elif response.status_code == 404:
@@ -386,8 +388,12 @@ class ThreatIntelApp:
             self.write(f"{result['malicious']}/{result['total']} engines\n", tag)
             self.write(f"  Suspicious: ", "key")
             self.write(f"{result['suspicious']}\n", "value")
-            self.write(f"  Clean:      ", "key")
-            self.write(f"{result['clean']}\n", "vt_clean")
+            self.write(f"  Harmless:   ", "key")
+            self.write(f"{result['harmless']}\n", "vt_clean")
+            self.write(f"  Undetected: ", "key")
+            self.write(f"{result['undetected']}\n", "value")
+            self.write(f"  Other:      ", "key")
+            self.write(f"{result['other']} (timeout/unsupported/failed)\n", "value")
         self.write("━"*60 + "\n", "divider")
         self.vt_btn.configure(state="normal", text="LOOKUP")
         self.status_var.set("VirusTotal lookup complete")
