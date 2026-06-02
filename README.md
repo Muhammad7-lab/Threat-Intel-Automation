@@ -1,9 +1,8 @@
 # Threat Intelligence Automation
 
-## Overview
-A Python-based threat intelligence automation tool with a dark-themed GUI that pulls live IOC data from multiple free public threat feeds and performs real-time hash lookups against VirusTotal.
+A Python desktop application that pulls live indicator-of-compromise (IOC) data from public threat intelligence feeds and performs on-demand hash lookups against VirusTotal. It aggregates recent malware samples, active botnet C2 infrastructure, and malicious SSL certificates into a single dark-themed GUI, with plain-text and HTML report export.
 
-Built to simulate the kind of daily threat intel workflows used in real SOC environments.
+Built as a hands-on project to work with real, production threat feeds from abuse.ch and VirusTotal.
 
 ## Screenshots
 
@@ -23,29 +22,24 @@ Built to simulate the kind of daily threat intel workflows used in real SOC envi
 ![HTML Export](html-export.png)
 
 ## Features
-- Real-time SHA256 and MD5 hash lookup against 75+ AV engines via VirusTotal
-- Filter by data source using checkboxes
-- Export reports as plain text or styled HTML
-- Dark themed professional GUI built with Python tkinter
+- Fetches recent entries from three live abuse.ch feeds, selectable via checkboxes
+- VirusTotal hash lookup (MD5 / SHA1 / SHA256) with a full detection breakdown — malicious, suspicious, harmless, undetected, and unresolved — that reconciles to the total engine count
+- Input validation on hashes before any API call is made
+- Plain-text and styled-HTML report export
+- Per-feed timeouts and error handling so a slow or unreachable feed won't hang the app
+- Dark-themed tkinter GUI; network calls run on background threads to keep the interface responsive
 
 ## Data Sources
-- MalwareBazaar (abuse.ch) — recent malware samples with file hashes and signatures
-- Feodo Tracker (abuse.ch) — active botnet C2 IP blocklist
-- SSL Blacklist (abuse.ch) — malicious SSL certificates including active C&C infrastructure
+- MalwareBazaar (abuse.ch) — recent malware samples with file hashes, file types, and signatures
+- Feodo Tracker (abuse.ch) — botnet C2 IP blocklist, including online/offline status and associated malware family
+- SSL Blacklist (abuse.ch) — malicious SSL certificate fingerprints tied to C2 infrastructure
 
-## Tools Used
-- Python 3
-- tkinter (GUI)
-- requests
-- VirusTotal API v3 (free tier)
+## Architecture
+- `threat_intel.py` — data layer. Fetches and parses the three feeds and returns plain Python data, with no GUI dependencies.
+- `gui.py` — tkinter front end. Imports the fetch functions from `threat_intel.py`, renders results, and handles the VirusTotal lookup and report export.
 
-## Setup
-1. Clone the repository
-2. Install dependencies: pip install requests
-3. Create a config.py file with your VirusTotal API key:
-   VT_API_KEY = "your_key_here"
-4. Run the GUI: python gui.py
+## Built With
+Python 3 · tkinter · requests · VirusTotal API v3
 
 ## Note
-config.py is excluded from this repository to protect API keys.
-Get a free VirusTotal API key at virustotal.com.
+API keys are kept in a local `config.py` that is excluded from the repository via `.gitignore`. This is a learning/portfolio project — it performs on-demand fetches rather than continuous automated ingestion.
