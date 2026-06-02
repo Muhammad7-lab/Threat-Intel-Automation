@@ -2,9 +2,9 @@ import csv
 import io
 import requests
 from datetime import datetime
- 
+
 TIMEOUT = 15
- 
+
 def _fetch_csv(url):
     """Fetch a URL and return (rows, error). rows is a list of field-lists with
     comment lines stripped. On failure rows is [] and error is a string."""
@@ -16,7 +16,7 @@ def _fetch_csv(url):
     data_lines = [ln for ln in resp.text.splitlines() if not ln.startswith("#")]
     reader = csv.reader(io.StringIO("\n".join(data_lines)), skipinitialspace=True)
     return list(reader), None
- 
+
 def get_malwarebazaar_samples(limit=10):
     rows, err = _fetch_csv("https://bazaar.abuse.ch/export/csv/recent/")
     if err:
@@ -37,7 +37,7 @@ def get_malwarebazaar_samples(limit=10):
         if len(samples) >= limit:
             break
     return samples, None
- 
+
 def get_feodotracker_ips(limit=10):
     rows, err = _fetch_csv("https://feodotracker.abuse.ch/downloads/ipblocklist.csv")
     if err:
@@ -52,12 +52,13 @@ def get_feodotracker_ips(limit=10):
                 "first_seen": parts[0],
                 "ip": parts[1],
                 "port": parts[2],
-                "malware": parts[5] if len(parts) > 5 else parts[3],
+                "status": parts[3] if len(parts) > 3 else "unknown",
+                "malware": parts[5] if len(parts) > 5 else "unknown",
             })
         if len(ips) >= limit:
             break
     return ips, None
- 
+
 def get_ssl_blacklist(limit=10):
     rows, err = _fetch_csv("https://sslbl.abuse.ch/blacklist/sslblacklist.csv")
     if err:
@@ -76,14 +77,14 @@ def get_ssl_blacklist(limit=10):
         if len(certs) >= limit:
             break
     return certs, None
- 
+
 def generate_report(malware_samples, feodo_ips, ssl_certs):
     report_date = datetime.now().strftime("%Y-%m-%d %H:%M")
     report = f"""
 DAILY THREAT INTELLIGENCE DIGEST
 Generated: {report_date}
 {'='*60}
- 
+
 MALWAREBAZAAR - RECENT MALWARE SAMPLES
 {'='*60}
 """
@@ -98,9 +99,9 @@ File Type: {sample['file_type']}
 Signature: {sample['signature']}
 {'-'*40}
 """
- 
+
     report += f"""
- 
+
 FEODOTRACKER - BOTNET C2 IP BLOCKLIST
 {'='*60}
 """
@@ -115,9 +116,9 @@ Malware: {ip['malware']}
 """
     else:
         report += "\nNo C2 IPs retrieved.\n"
- 
+
     report += f"""
- 
+
 SSL BLACKLIST - MALICIOUS SSL CERTIFICATES
 {'='*60}
 """
@@ -131,29 +132,29 @@ Malware: {cert['malware']}
 """
     else:
         report += "\nNo SSL certificates retrieved.\n"
- 
+
     return report
- 
+
 def main():
     print("Fetching MalwareBazaar samples...")
     malware_samples, err = get_malwarebazaar_samples()
     print(err if err else f"Retrieved {len(malware_samples)} malware samples")
- 
+
     print("Fetching Feodo Tracker C2 IPs...")
     feodo_ips, err = get_feodotracker_ips()
     print(err if err else f"Retrieved {len(feodo_ips)} C2 IPs")
- 
+
     print("Fetching SSL Blacklist...")
     ssl_certs, err = get_ssl_blacklist()
     print(err if err else f"Retrieved {len(ssl_certs)} SSL certificates")
- 
+
     report = generate_report(malware_samples, feodo_ips, ssl_certs)
     filename = f"threat_digest_{datetime.now().strftime('%Y%m%d')}.txt"
     with open(filename, "w", encoding="utf-8") as f:
         f.write(report)
- 
+
     print(f"\nReport saved to {filename}")
     print(report)
- 
+
 if __name__ == "__main__":
     main()

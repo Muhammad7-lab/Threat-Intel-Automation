@@ -451,10 +451,12 @@ class ThreatIntelApp:
                 self.write(f"  Port:        ", "key")
                 self.write(f"{ip['port']}\n", "value")
                 self.write(f"  Status:      ", "key")
-                status_tag = "online" if ip['malware'].strip().lower() == "online" else "value"
-                self.write(f"{ip['malware']}\n", status_tag)
+                status_tag = "online" if ip['status'].strip().lower() == "online" else "value"
+                self.write(f"{ip['status']}\n", status_tag)
+                self.write(f"  Malware:     ", "key")
+                self.write(f"{ip['malware']}\n", "value")
                 self.write("  " + "─"*56 + "\n", "divider")
-                self.report_content += f"IP: {ip['ip']} Port: {ip['port']} Status: {ip['malware']}\n"
+                self.report_content += f"IP: {ip['ip']} Port: {ip['port']} Status: {ip['status']} Malware: {ip['malware']}\n"
 
         if self.var_ssl.get():
             self.status_var.set("Fetching SSL Blacklist...")
