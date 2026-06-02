@@ -5,6 +5,13 @@ import requests
 import webbrowser
 from datetime import datetime
 from config import VT_API_KEY
+from threat_intel import (
+    get_malwarebazaar_samples,
+    get_feodotracker_ips,
+    get_ssl_blacklist,
+)
+import html as _html
+import re as _re
 
 BG = "#0d1117"
 PANEL = "#161b22"
@@ -17,70 +24,6 @@ RED = "#f85149"
 YELLOW = "#e3b341"
 GREEN = "#3fb950"
 BLUE = "#58a6ff"
-
-def get_malwarebazaar_samples():
-    url = "https://bazaar.abuse.ch/export/csv/recent/"
-    response = requests.get(url)
-    lines = response.text.splitlines()
-    samples = []
-    for line in lines:
-        if line.startswith("#"):
-            continue
-        parts = line.split(",")
-        if len(parts) >= 9:
-            samples.append({
-                "first_seen": parts[0].strip('"'),
-                "sha256": parts[1].strip('"'),
-                "md5": parts[2].strip('"'),
-                "sha1": parts[3].strip('"'),
-                "file_type": parts[4].strip('"'),
-                "file_name": parts[6].strip('"') if len(parts) > 6 else "Unknown",
-                "signature": parts[7].strip('"') if len(parts) > 7 else "Unknown"
-            })
-        if len(samples) >= 10:
-            break
-    return samples
-
-def get_feodotracker_ips():
-    url = "https://feodotracker.abuse.ch/downloads/ipblocklist.csv"
-    response = requests.get(url)
-    lines = response.text.splitlines()
-    ips = []
-    for line in lines:
-        if line.startswith("#"):
-            continue
-        if line.startswith("first_seen"):
-            continue
-        parts = line.split(",")
-        if len(parts) >= 4:
-            ips.append({
-                "first_seen": parts[0].strip('"'),
-                "ip": parts[1].strip('"'),
-                "port": parts[2].strip('"'),
-                "malware": parts[3].strip('"')
-            })
-        if len(ips) >= 10:
-            break
-    return ips
-
-def get_ssl_blacklist():
-    url = "https://sslbl.abuse.ch/blacklist/sslblacklist.csv"
-    response = requests.get(url)
-    lines = response.text.splitlines()
-    certs = []
-    for line in lines:
-        if line.startswith("#"):
-            continue
-        parts = line.split(",")
-        if len(parts) >= 3:
-            certs.append({
-                "date": parts[0].strip('"'),
-                "sha1": parts[1].strip('"'),
-                "malware": parts[2].strip('"')
-            })
-        if len(certs) >= 10:
-            break
-    return certs
 
 def lookup_virustotal(hash_value):
     url = f"https://www.virustotal.com/api/v3/files/{hash_value}"
@@ -396,11 +339,11 @@ class ThreatIntelApp:
             html += "<h2>MalwareBazaar — Recent Malware Samples</h2>"
             for s in self.fetched_samples:
                 html += f"""<div class="entry">
-<span class="key">First Seen:</span> <span class="value">{s['first_seen']}</span><br>
-<span class="key">SHA256:</span> <span class="value">{s['sha256']}</span><br>
-<span class="key">MD5:</span> <span class="value">{s['md5']}</span><br>
-<span class="key">File Type:</span> <span class="value">{s['file_type']}</span><br>
-<span class="key">Signature:</span> <span class="value">{s['signature']}</span>
+<span class="key">First Seen:</span> <span class="value">{_html.escape(s['first_seen'])}</span><br>
+<span class="key">SHA256:</span> <span class="value">{_html.escape(s['sha256'])}</span><br>
+<span class="key">MD5:</span> <span class="value">{_html.escape(s['md5'])}</span><br>
+<span class="key">File Type:</span> <span class="value">{_html.escape(s['file_type'])}</span><br>
+<span class="key">Signature:</span> <span class="value">{_html.escape(s['signature'])}</span>
 </div>"""
 
         html += "</body></html>"
@@ -415,6 +358,9 @@ class ThreatIntelApp:
         hash_value = self.hash_entry.get().strip()
         if not hash_value or hash_value == "Enter SHA256 or MD5 hash...":
             self.status_var.set("Enter a hash to look up")
+            return
+        if not _re.fullmatch(r"[A-Fa-f0-9]{32}|[A-Fa-f0-9]{40}|[A-Fa-f0-9]{64}", hash_value):
+            self.status_var.set("Invalid hash — must be MD5 (32), SHA1 (40), or SHA256 (64) hex chars")
             return
         self.vt_btn.configure(state="disabled", text="LOOKING UP...")
         self.status_var.set(f"Querying VirusTotal for {hash_value[:20]}...")
@@ -465,31 +411,37 @@ class ThreatIntelApp:
             self.write("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n", "divider")
             self.write(" MALWAREBAZAAR — RECENT MALWARE SAMPLES\n", "section")
             self.write("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n", "divider")
-            samples = get_malwarebazaar_samples()
+            samples, err = get_malwarebazaar_samples()
+            if err:
+                self.write(f"\n  Feed error: {err}\n", "online")
+                samples = []
             self.fetched_samples = samples
             self.report_content += "MALWAREBAZAAR\n" + "="*60 + "\n"
             for s in samples:
                 self.write(f"\n  First Seen:  ", "key")
-                self.write(f"{s['first_seen']}\n", "value")
+                self.write(f"{_html.escape(s['first_seen'])}\n", "value")
                 self.write(f"  SHA256:      ", "key")
-                self.write(f"{s['sha256']}\n", "value")
+                self.write(f"{_html.escape(s['sha256'])}\n", "value")
                 self.write(f"  MD5:         ", "key")
-                self.write(f"{s['md5']}\n", "value")
+                self.write(f"{_html.escape(s['md5'])}\n", "value")
                 self.write(f"  File Type:   ", "key")
-                self.write(f"{s['file_type']}\n", "value")
+                self.write(f"{_html.escape(s['file_type'])}\n", "value")
                 self.write(f"  File Name:   ", "key")
                 self.write(f"{s['file_name']}\n", "value")
                 self.write(f"  Signature:   ", "key")
-                self.write(f"{s['signature']}\n", "value")
+                self.write(f"{_html.escape(s['signature'])}\n", "value")
                 self.write("  " + "─"*56 + "\n", "divider")
-                self.report_content += f"SHA256: {s['sha256']}\nMD5: {s['md5']}\n\n"
+                self.report_content += f"SHA256: {_html.escape(s['sha256'])}\nMD5: {_html.escape(s['md5'])}\n\n"
 
         if self.var_feodo.get():
             self.status_var.set("Fetching Feodo Tracker C2 IPs...")
             self.write("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n", "divider")
             self.write(" FEODO TRACKER — BOTNET C2 IP BLOCKLIST\n", "section")
             self.write("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n", "divider")
-            ips = get_feodotracker_ips()
+            ips, err = get_feodotracker_ips()
+            if err:
+                self.write(f"\n  Feed error: {err}\n", "online")
+                ips = []
             self.report_content += "\nFEODO TRACKER\n" + "="*60 + "\n"
             for ip in ips:
                 self.write(f"\n  First Seen:  ", "key")
@@ -509,7 +461,10 @@ class ThreatIntelApp:
             self.write("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n", "divider")
             self.write(" SSL BLACKLIST — MALICIOUS CERTIFICATES\n", "section")
             self.write("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n", "divider")
-            certs = get_ssl_blacklist()
+            certs, err = get_ssl_blacklist()
+            if err:
+                self.write(f"\n  Feed error: {err}\n", "online")
+                certs = []
             self.report_content += "\nSSL BLACKLIST\n" + "="*60 + "\n"
             for cert in certs:
                 self.write(f"\n  Date:        ", "key")
